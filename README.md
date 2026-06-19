@@ -19,7 +19,7 @@ Diferente de um simples aplicativo de vendas, este projeto é um **ERP modular**
 ## 💰 Cloud Economics & Infraestrutura de Baixo Custo
 
 Um dos maiores diferenciais deste projeto é a otimização extrema de recursos em nuvem e a mentalidade de Engenharia de Produto focada em viabilidade financeira:
-* **Custo Zero de Manutenção:** A arquitetura foi desenhada aproveitando ao máximo serviços Serverless (Vercel) e BaaS (Supabase). O custo operacional mensal para manter o sistema no ar e escalável é de R$ 0,00.
+* **Custo operacional inicial zerado em cloud:** utilizando free tiers de Vercel e Supabase dentro do volume atual da operação.
 * **Setup Inicial Otimizado:** O gasto total de produção e implantação de infraestrutura foi de **apenas R$ 180,00 (pagos uma única vez)**, englobando registros, domínios e configurações essenciais.
 
 ---
