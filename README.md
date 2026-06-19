@@ -38,10 +38,15 @@ Um dos maiores diferenciais deste projeto é a otimização extrema de recursos 
 * **Impressão Direta sem API Nativa:** Integração de uma biblioteca de conversão hexadecimal permitindo que o navegador (via Web Bluetooth API) comunique-se diretamente com mini impressoras térmicas utilizando o protocolo ESC/POS.
 * **Fluxo Sob Demanda:** A cozinha opera 100% em telas (digital). A impressão física é assíncrona e acionada manualmente pelo entregador com baixíssima latência (em torno de 2 metros de distância via Bluetooth) apenas quando o pedido está finalizado, economizando hardware e papel.
 
+### 4. Modelagem Híbrida e Inteligência de Dados (PostgreSQL / Supabase)
+* **Modelagem Relacional Avançada vs. JSON:** Diferente de abordagens genéricas que transformam todo o payload em JSON (o que penaliza a performance e quebra a consistência), o banco de dados foi modelado de forma híbrida. Dados matemáticos, estados temporais rígidos (métrica de tempo de preparo, horários de entrega) e status de fluxo são tipos de dados nativos estruturados. Campos JSON foram estritamente isolados apenas para dados altamente mutáveis de personalização de produtos (ex: combinações infinitas de adicionais).
+* **Análise e Telemetria Operacional:** O banco foi estruturado de forma analítica, retendo dados precisos de tempos de ciclo (pedido gerado -> aceito -> preparado -> entregue) para viabilizar relatórios futuros de inteligência de negócio (BI) e projeções de produtividade.
 ---
 
 ## 📈 Impacto no Negócio & Teste de Carga
 
+* **Confiabilidade Extrema (Zero Data Loss):** A plataforma já intermediou **quase 3.000 pedidos reais em produção**, apresentando **0% de perda de dados** ou falhas em transições de status crítico de pedidos, provando a estabilidade e a resiliência da infraestrutura sob stress de uso contínuo.
+  
 O desenvolvimento foi guiado por um profundo entendimento do domínio (Domain Knowledge), reestruturando a lógica da empresa:
 
 * **Especialização de Cargos (Escalabilidade Humana):** O sistema isolou as funções. Vendedores de alta performance agora ficam fixos na praia (onde o dinheiro está), enquanto a logística é feita por entregadores guiados pelas coordenadas exatas do sistema.
