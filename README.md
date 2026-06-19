@@ -1,66 +1,334 @@
-# Porto Açaí - Ecossistema ERP & PWA (Real-time Management System)
+# Porto Açaí — Sistema Operacional PWA para Gestão de Pedidos, Cozinha e Logística em Tempo Real
 
-Este repositório documenta a arquitetura, as decisões de engenharia e o impacto de negócio do ecossistema digital desenvolvido para o *Porto Açaí*. O sistema foi projetado para transformar uma operação física caótica (baseada em papel, memória e WhatsApp) em um fluxo digital ágil, assíncrono e conectado em tempo real.
+Este repositório documenta a arquitetura, as decisões de engenharia e o impacto operacional do ecossistema digital desenvolvido para o **Porto Açaí**.
 
-> **Confidencialidade:** O código-fonte completo é de propriedade exclusiva do cliente. Este documento serve como memorial descritivo da arquitetura de software, da stack tecnológica e dos desafios de engenharia resolvidos, para fins de portfólio.
+O sistema foi projetado para transformar uma operação física baseada em papel, memória operacional e WhatsApp em um fluxo digital mais ágil, rastreável e conectado em tempo real.
 
----
-
-## 🏗️ Visão Global do Ecossistema
-
-Diferente de um simples aplicativo de vendas, este projeto é um **ERP modular** que gerencia todos os pontos críticos do negócio:
-* **Módulo Cliente (PWA):** Interface pública para seleção de produtos e personalização dinâmica de acompanhamentos.
-* **Painel de Operações (Cozinha e Logística):** Gestão de tickets em tempo real para preparação e saída de entregas.
-* **Módulo Ambulante:** Funcionalidade desenhada para vendas na praia, operando sob redes 3G instáveis.
-* **Painel Administrativo:** Controle de staff, segurança, histórico de vendas e resolução de litiges (conflitos com clientes).
+> **Confidencialidade:** o código-fonte completo é de propriedade exclusiva do cliente. Este repositório funciona como um memorial descritivo da arquitetura, da stack tecnológica e dos desafios de engenharia resolvidos, para fins de portfólio técnico.
 
 ---
 
-## 💰 Cloud Economics & Infraestrutura de Baixo Custo
+## Visão geral
 
-Um dos maiores diferenciais deste projeto é a otimização extrema de recursos em nuvem e a mentalidade de Engenharia de Produto focada em viabilidade financeira:
-* **Custo operacional inicial zerado em cloud:** utilizando free tiers de Vercel e Supabase dentro do volume atual da operação.
-* **Setup Inicial Otimizado:** O gasto total de produção e implantação de infraestrutura foi de **apenas R$ 180,00 (pagos uma única vez)**, englobando registros, domínios e configurações essenciais.
+O projeto não foi desenvolvido como um aplicativo genérico de vendas.
 
----
+Ele foi criado como um sistema operacional sob medida para a rotina do cliente, conectando os principais pontos da operação:
 
-## ⚙️ Desafios Técnicos & Soluções de Arquitetura
+* atendimento ao cliente;
+* pedidos;
+* cozinha;
+* logística;
+* vendedores ambulantes;
+* caixas;
+* administração;
+* histórico operacional.
 
-### 1. Tolerância a Falhas e Sincronização (Realtime & Concurrency)
-* **Arquitetura Orientada a Eventos:** Sincronização imediata entre o Módulo Cliente e a Cozinha via *hooks* (`useEffect`) conectados aos canais do PostgreSQL (`postgres_changes` via Supabase). A latência é quase nula, eliminando a necessidade de *polling* HTTP.
-* **Idempotência e Bloqueio de Estado:** Para evitar duplicação de pedidos (comum em redes 3G lentas na praia) e concorrência na cozinha, o sistema utiliza chaves de idempotência geradas no frontend e validadas por *Unique Constraints* no banco. Quando um cozinheiro aceita uma comanda, o estado do banco oculta esse ticket instantaneamente para os outros operadores.
-
-### 2. Segurança Multi-camadas (Defense in Depth)
-* **Princípio do Menor Privilégio (RLS):** O módulo de cardápio público é isolado. Graças às políticas de *Row-Level Security* (RLS) do PostgreSQL, terminais públicos possuem apenas permissão de escrita (`INSERT`) com limites lógicos de volume (evitando ataques de negação de serviço ou spam). É matematicamente impossível realizar `SELECT` ou `UPDATE` em pedidos de terceiros ou tabelas críticas.
-* **Segurança Operacional Fluida:** Combinação de senhas globais ocultas (`.env`) para administração e validações leves no cliente (PINs e URLs ofuscadas) para barrar acessos não autorizados nos tablets do balcão, sem prejudicar a velocidade da operação com autenticações pesadas de rede.
-
-### 3. Integração de Hardware de Baixo Nível (Web Bluetooth & ESC/POS)
-* **Impressão Direta sem API Nativa:** Integração de uma biblioteca de conversão hexadecimal permitindo que o navegador (via Web Bluetooth API) comunique-se diretamente com mini impressoras térmicas utilizando o protocolo ESC/POS.
-* **Fluxo Sob Demanda:** A cozinha opera 100% em telas (digital). A impressão física é assíncrona e acionada manualmente pelo entregador com baixíssima latência (em torno de 2 metros de distância via Bluetooth) apenas quando o pedido está finalizado, economizando hardware e papel.
-
-### 4. Modelagem Híbrida e Inteligência de Dados (PostgreSQL / Supabase)
-* **Modelagem Relacional Avançada vs. JSON:** Diferente de abordagens genéricas que transformam todo o payload em JSON (o que penaliza a performance e quebra a consistência), o banco de dados foi modelado de forma híbrida. Dados matemáticos, estados temporais rígidos (métrica de tempo de preparo, horários de entrega) e status de fluxo são tipos de dados nativos estruturados. Campos JSON foram estritamente isolados apenas para dados altamente mutáveis de personalização de produtos (ex: combinações infinitas de adicionais).
-* **Análise e Telemetria Operacional:** O banco foi estruturado de forma analítica, retendo dados precisos de tempos de ciclo (pedido gerado -> aceito -> preparado -> entregue) para viabilizar relatórios futuros de inteligência de negócio (BI) e projeções de produtividade.
----
-
-## 📈 Impacto no Negócio & Teste de Carga
-
-* **Confiabilidade Extrema (Zero Data Loss):** A plataforma já intermediou **quase 3.000 pedidos reais em produção**, apresentando **0% de perda de dados** ou falhas em transições de status crítico de pedidos, provando a estabilidade e a resiliência da infraestrutura sob stress de uso contínuo.
-  
-O desenvolvimento foi guiado por um profundo entendimento do domínio (Domain Knowledge), reestruturando a lógica da empresa:
-
-* **Especialização de Cargos (Escalabilidade Humana):** O sistema isolou as funções. Vendedores de alta performance agora ficam fixos na praia (onde o dinheiro está), enquanto a logística é feita por entregadores guiados pelas coordenadas exatas do sistema.
-* **Rastreabilidade:** O histórico imutável reduziu prejuízos com "clientes problemáticos", fornecendo provas exatas e imediatas sobre a montagem de cada pedido.
-* **Comunicação Assíncrona via Push:** Implementação do OneSignal para que o dono gerencie a equipe via notificações sonoras (ex: chamadas para almoço) e a cozinha sinalize falta de insumos em tempo real ("acabou o morango").
-* **Stress Test em Produção:** No pico da temporada turística, a arquitetura sustentou de forma fluida **13 operadores simultâneos** (3 entregadores, 3 cozinheiros, 2 administradores, 3 vendedores ambulantes no 3G, 2 caixas de balcão), além de todo o tráfego público do PWA dos clientes.
+O sistema possui características de um ERP modular, mas foi desenhado com escopo específico para a operação real do Porto Açaí.
 
 ---
 
-## 💻 Stack Tecnológica
+## Módulos principais
 
-* **Frontend:** React 19, Vite (HMR), PWA, React Router v7.
-* **Backend & Banco de Dados:** Supabase, PostgreSQL (RLS, Realtime Subscriptions).
-* **Hardware & APIs:** Web Bluetooth API, OneSignal (Push Notifications).
-* **Deploy:** Vercel.
-**Desenvolvido por:** [João Davies]  
+### 1. Módulo Cliente — PWA
+
+Interface pública acessada pelo cliente para seleção de produtos, personalização de pedidos e envio da solicitação.
+
+O módulo foi construído como PWA, permitindo uma experiência leve, acessível pelo navegador e adequada ao uso em dispositivos móveis.
+
+### 2. Painel de Operações — Cozinha e Logística
+
+Painel interno para acompanhamento dos pedidos em tempo real.
+
+A cozinha visualiza tickets, aceita pedidos, acompanha o preparo e sinaliza mudanças de status. A logística acompanha a saída dos pedidos e organiza entregas.
+
+### 3. Módulo Ambulante
+
+Funcionalidade desenhada para vendedores em ambiente externo, especialmente em contexto de praia, onde a conexão pode ser instável e o uso precisa ser rápido.
+
+O fluxo foi pensado para operar em dispositivos móveis e redes 3G/4G, reduzindo fricção durante o atendimento.
+
+### 4. Painel Administrativo
+
+Área administrativa para acompanhamento da operação, consulta de histórico, controle de equipe, gestão de permissões e apoio na resolução de conflitos com clientes.
+
+---
+
+## Objetivo do projeto
+
+O objetivo principal foi reduzir o caos operacional e tornar o fluxo de pedidos mais rastreável.
+
+Antes do sistema, parte da operação dependia de comunicação manual, memória, papel e mensagens dispersas.
+
+Com o sistema, os pedidos passaram a ser organizados em um fluxo digital com:
+
+* registro centralizado;
+* atualização de status;
+* histórico de pedidos;
+* separação de funções;
+* comunicação em tempo real;
+* maior rastreabilidade;
+* redução de retrabalho operacional.
+
+---
+
+## Cloud Economics e infraestrutura de baixo custo
+
+Um dos objetivos de engenharia foi manter a infraestrutura simples, barata e adequada ao volume real da operação.
+
+A arquitetura foi desenhada utilizando serviços serverless e BaaS, principalmente:
+
+* Vercel para deploy;
+* Supabase para banco de dados, autenticação, Row-Level Security e realtime.
+
+No estágio atual da operação, o projeto utiliza os free tiers disponíveis dessas plataformas, mantendo o custo operacional inicial de cloud em R$ 0,00/mês dentro do volume atual de uso.
+
+O setup inicial de produção e implantação teve custo aproximado de R$ 180,00, considerando registros, domínios e configurações essenciais.
+
+> Observação: esse valor se refere ao custo de infraestrutura/cloud no estágio atual do projeto, não ao custo de desenvolvimento, suporte, manutenção evolutiva ou operação futura em escala maior.
+
+---
+
+## Desafios técnicos e decisões de arquitetura
+
+### 1. Realtime, concorrência e tolerância a falhas
+
+A operação exigia atualização rápida entre cliente, cozinha, caixa, ambulantes e logística.
+
+Para isso, o sistema utiliza recursos de realtime do Supabase, conectados a eventos do PostgreSQL por meio de `postgres_changes`.
+
+Isso permitiu criar um fluxo de atualização em tempo real sem depender de polling HTTP constante.
+
+Principais decisões:
+
+* uso de subscriptions realtime;
+* atualização de tickets conforme mudanças no banco;
+* separação de estados do pedido;
+* redução de duplicidade operacional;
+* ocultação de tickets já assumidos por outro operador;
+* sincronização entre diferentes telas da operação.
+
+### 2. Idempotência e controle de duplicidade
+
+Em ambientes com conexão instável, especialmente no módulo ambulante, existe risco de duplicação de pedidos por múltiplos cliques, lentidão da rede ou reenvio acidental.
+
+Para reduzir esse risco, o sistema utiliza chaves de idempotência geradas no frontend e validadas no banco por meio de restrições de unicidade.
+
+Esse desenho ajuda a impedir que o mesmo pedido seja registrado mais de uma vez em situações de instabilidade.
+
+### 3. Segurança com Row-Level Security
+
+O sistema utiliza políticas de Row-Level Security do PostgreSQL/Supabase para separar permissões e reduzir exposição de dados.
+
+O módulo público possui acesso restrito e controlado. As políticas foram desenhadas para permitir apenas operações necessárias ao fluxo, evitando acesso indevido a tabelas críticas ou dados de terceiros.
+
+No desenho atual, as políticas de RLS impedem operações não autorizadas de leitura ou alteração em áreas protegidas do sistema.
+
+### 4. Segurança operacional leve
+
+A operação precisava de segurança, mas também exigia velocidade.
+
+Por isso, o sistema combina mecanismos simples e adequados ao contexto:
+
+* variáveis de ambiente para segredos;
+* URLs internas não públicas;
+* validações leves de acesso;
+* separação de painéis;
+* permissões por tipo de operação;
+* restrição de ações sensíveis.
+
+A decisão foi evitar autenticações pesadas demais em pontos operacionais de alta velocidade, sem abrir mão de uma separação mínima de responsabilidades.
+
+---
+
+## Integração com hardware
+
+### Web Bluetooth e ESC/POS
+
+O projeto inclui integração com mini impressoras térmicas usando Web Bluetooth API e protocolo ESC/POS.
+
+Essa solução permite que o navegador se comunique diretamente com a impressora térmica, sem depender de aplicativo nativo ou API proprietária.
+
+A cozinha opera principalmente em telas digitais. A impressão física é acionada sob demanda, quando necessário, especialmente no momento de saída ou organização do pedido.
+
+Essa abordagem ajudou a reduzir custo de hardware e evitar dependência de impressoras mais caras ou infraestrutura local complexa.
+
+---
+
+## Modelagem de dados
+
+O banco foi modelado com uma abordagem híbrida entre dados relacionais estruturados e campos JSON controlados.
+
+A decisão foi evitar armazenar todo o pedido como um único payload genérico em JSON, pois isso dificultaria consistência, filtros, relatórios e análises futuras.
+
+Foram mantidos como dados estruturados:
+
+* status de pedido;
+* horários;
+* tempos de preparo;
+* identificadores;
+* vínculos operacionais;
+* estados de fluxo;
+* informações relevantes para relatórios.
+
+Campos JSON foram usados de forma pontual para partes altamente variáveis, como personalizações de produtos, adicionais e combinações flexíveis.
+
+Essa decisão preserva flexibilidade sem comprometer totalmente a consistência analítica do banco.
+
+---
+
+## Telemetria e histórico operacional
+
+O sistema foi estruturado para registrar informações úteis sobre a operação, como:
+
+* horário de criação do pedido;
+* aceite pela cozinha;
+* preparo;
+* saída para entrega;
+* conclusão;
+* histórico de status;
+* dados de personalização;
+* responsáveis operacionais.
+
+Esses dados permitem análises futuras de produtividade, gargalos, tempos de ciclo e desempenho operacional.
+
+---
+
+## Impacto no negócio
+
+O sistema já intermediou quase 3.000 pedidos reais em produção.
+
+Durante o uso observado, não houve registro de perda de dados em transições críticas de status de pedidos.
+
+Além da parte técnica, o sistema ajudou a reorganizar a operação do cliente.
+
+### Separação de funções
+
+Antes, a operação dependia mais de comunicação manual e improviso.
+
+Com o sistema, funções passaram a ser melhor separadas:
+
+* vendedores focados em venda;
+* cozinha focada em preparo;
+* entregadores focados em logística;
+* administração focada em controle e histórico.
+
+Essa separação ajudou a tornar a operação mais previsível e menos dependente de memória individual.
+
+### Rastreabilidade
+
+O histórico de pedidos permitiu consultar informações específicas sobre montagem, status e detalhes de cada venda.
+
+Isso reduziu conflitos operacionais e ajudou o cliente a lidar melhor com dúvidas, reclamações ou divergências.
+
+### Comunicação assíncrona
+
+O projeto também utiliza OneSignal para notificações operacionais.
+
+As notificações foram usadas para apoiar comunicações internas, como alertas de falta de insumos ou chamadas operacionais entre equipe e gestão.
+
+---
+
+## Validação em uso real
+
+Durante pico de temporada turística, o sistema foi utilizado em uma operação com múltiplos usuários simultâneos, incluindo:
+
+* vendedores ambulantes em conexão móvel;
+* cozinheiros;
+* entregadores;
+* caixas;
+* administradores;
+* clientes acessando o PWA público.
+
+Em um dos cenários de maior uso observado, a operação contou com aproximadamente 13 operadores simultâneos, além do tráfego público do PWA.
+
+Essa validação em produção ajudou a comprovar que a arquitetura era adequada para o volume e a realidade operacional do cliente naquele estágio.
+
+---
+
+## Stack tecnológica
+
+### Frontend
+
+* React 19;
+* Vite;
+* PWA;
+* React Router v7.
+
+### Backend e banco de dados
+
+* Supabase;
+* PostgreSQL;
+* Row-Level Security;
+* Realtime Subscriptions;
+* `postgres_changes`.
+
+### Hardware e integrações
+
+* Web Bluetooth API;
+* ESC/POS;
+* OneSignal.
+
+### Deploy
+
+* Vercel.
+
+---
+
+## Principais aprendizados técnicos
+
+Este projeto exigiu decisões práticas em várias camadas:
+
+* arquitetura realtime;
+* modelagem de dados para operação real;
+* controle de concorrência;
+* segurança com RLS;
+* redução de custo de infraestrutura;
+* integração com hardware simples;
+* experiência de uso em ambiente com conexão instável;
+* desenho de fluxo para equipe não técnica;
+* transformação de processo físico em processo digital.
+
+O maior desafio não foi apenas construir telas ou banco de dados.
+
+O desafio foi entender o domínio da operação e traduzir esse domínio em software utilizável no ritmo real do negócio.
+
+---
+
+## O que este projeto demonstra
+
+Este case demonstra experiência prática em:
+
+* desenvolvimento full stack;
+* sistemas em produção;
+* arquitetura orientada a eventos;
+* PWA;
+* realtime;
+* Supabase;
+* PostgreSQL;
+* RLS;
+* integração com hardware via navegador;
+* modelagem de dados operacional;
+* cloud economics;
+* produto sob medida para negócio real;
+* engenharia com restrições reais de custo, rede e uso.
+
+---
+
+## Limitações e escopo
+
+Este repositório é apenas um memorial técnico.
+
+O código-fonte completo não está disponível publicamente por questões de confidencialidade e propriedade do cliente.
+
+As informações descritas aqui representam a arquitetura, as decisões de engenharia e os resultados observados no contexto específico do Porto Açaí.
+
+O projeto não é apresentado como uma solução universal para restaurantes ou food service, mas como um sistema sob medida que resolveu problemas reais de uma operação específica.
+
+---
+
+## Autor
+
+Desenvolvido por **João Davies**.
+
+Projeto full stack desenvolvido para operação real em produção, com foco em gestão de pedidos, realtime, logística, baixo custo de infraestrutura e rastreabilidade operacional.
 **LinkedIn:** [www.linkedin.com/in/joao-davies-133587229]
